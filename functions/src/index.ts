@@ -2,19 +2,18 @@ import {onCall} from "firebase-functions/v2/https";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import {RtcTokenBuilder, RtcRole} from "agora-token";
-import {config} from "dotenv";
+import { defineSecret } from "firebase-functions/params";
 
-
-config({path: "../.env"});
-console.log(process.env.APP_ID, process.env.APP_CERTIFICATE);
 
 admin.initializeApp();
 
-const APP_ID = process.env.APP_ID;
-const APP_CERTIFICATE = process.env.APP_CERTIFICATE;
+const APP_ID = defineSecret("APP_ID");
+const APP_CERTIFICATE = defineSecret("APP_CERTIFICATE");
 
 // Callable Function to Generate Agora Token
-export const generateAgoraToken = onCall(async (request) => {
+export const generateAgoraToken = onCall({
+  secrets: [APP_ID, APP_CERTIFICATE]
+}, async (request) => {
   if (!request.auth) {
     throw new Error("The function must be called while authenticated.");
   }
@@ -33,8 +32,8 @@ export const generateAgoraToken = onCall(async (request) => {
 
   try {
     const token = RtcTokenBuilder.buildTokenWithUid(
-      APP_ID!,
-      APP_CERTIFICATE!,
+      APP_ID.value(),
+      APP_CERTIFICATE.value(),
       channelName,
       uid,
       role,
