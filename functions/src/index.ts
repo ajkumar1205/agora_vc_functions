@@ -56,7 +56,7 @@ interface CallData {
 }
 
 interface UserData {
-    displayName: string;
+    name: string;
     fcmToken: string;
 }
 
@@ -66,24 +66,24 @@ export const sendCallNotification = onDocumentCreated("calls/{callId}", async (e
 
   const {callerId, receiverId} = callData;
 
-  const callerDoc = await admin.firestore().collection("users").doc(callerId).get();
-  const receiverDoc = await admin.firestore().collection("users").doc(receiverId).get();
+  const callerDoc = await admin.firestore().collection("users").where("uid", "==", callerId).limit(1).get();
+  const receiverDoc = await admin.firestore().collection("users").where("uid", "==", receiverId).limit(1).get();
 
-  if (!receiverDoc.exists) {
+  if (receiverDoc.size < 1) {
     return console.error("Receiver not found");
   }
 
-  const callerData = callerDoc.data() as UserData;
-  const receiverData = receiverDoc.data() as UserData;
+  const callerData = callerDoc.docs[0].data() as UserData;
+  const receiverData = receiverDoc.docs[0].data() as UserData;
 
   const payload: admin.messaging.TokenMessage = {
     notification: {
-      title: `Incoming Call from ${callerData.displayName}`,
+      title: `Incoming Call from ${callerData.name}`,
       body: "Tap to answer.",
     },
     data: {
       channelName: callData.channelName,
-      caller: JSON.stringify(callerDoc.data()),
+      caller: JSON.stringify(callerDoc.docs[0].data()),
     },
     token: receiverData.fcmToken,
   };
