@@ -1,7 +1,7 @@
-import {onCall} from "firebase-functions/v2/https";
-import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import { onCall } from "firebase-functions/v2/https";
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
-import {RtcTokenBuilder, RtcRole} from "agora-token";
+import { RtcTokenBuilder, RtcRole } from "agora-token";
 import { defineSecret } from "firebase-functions/params";
 
 
@@ -19,7 +19,7 @@ export const generateAgoraToken = onCall({
   }
 
   const channelName = request.data.channelName;
-  const uid: string = request.auth.uid;
+  const uid: number = parseInt(request.auth.uid);
 
   if (!channelName) {
     throw new Error("Missing channelName.");
@@ -40,7 +40,7 @@ export const generateAgoraToken = onCall({
       expirationTimeInSeconds,
       privilegeExpiredTs
     );
-    return {token};
+    return { token };
   } catch (error) {
     console.error("Error generating Agora token:", error);
     throw new Error("Could not generate Agora token.");
@@ -49,21 +49,21 @@ export const generateAgoraToken = onCall({
 
 // Firestore Trigger to Send FCM Notification
 interface CallData {
-    callerId: string;
-    receiverId: string;
-    channelName: string;
+  callerId: string;
+  receiverId: string;
+  channelName: string;
 }
 
 interface UserData {
-    name: string;
-    fcmToken: string;
+  name: string;
+  fcmToken: string;
 }
 
 export const sendCallNotification = onDocumentCreated("calls/{callId}", async (event) => {
   const callData = event.data?.data() as CallData;
   if (!callData) return console.error("No call data found");
 
-  const {callerId, receiverId} = callData;
+  const { callerId, receiverId } = callData;
 
   const callerDoc = await admin.firestore().collection("users").where("uid", "==", callerId).limit(1).get();
   const receiverDoc = await admin.firestore().collection("users").where("uid", "==", receiverId).limit(1).get();
